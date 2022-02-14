@@ -1,0 +1,33 @@
+def find_largest_word(data):
+    string_list = []
+    for string in data.split("\n"):
+        if not string.strip():
+            continue
+        string_list.append(string.strip())
+        longest = max(string.split(), key=len)
+        return longest
+
+
+file = open('data1.txt', 'w')
+print('Enter the text:')
+lines = []
+while True:
+    line = input()
+    if line:
+        lines.append(line)
+    else:
+        break
+text = '\n'.join(lines)
+text += '\n'
+file.write(text)
+file.close()
+
+print('Content of file:')
+print(text)
+
+newFile = open('largestWords.txt', 'w')
+biggestWord = newFile.write(str(find_largest_word(text)))
+newFile.close()
+# print('Largest words from each line of text:')
+# print(find_largest_word(text))
+
