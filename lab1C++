@@ -1,0 +1,103 @@
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <cwchar>
+#include <cstring>
+
+using namespace std;
+
+string input();
+
+string findLargestWord(char *line);
+
+int main() {
+    ofstream file("data.txt", ios::app);
+    if (!file) {
+        cout << "Can`t open file!" << endl;
+    }
+    cout << "Enter the text:\n";
+    string newData = input();
+    cout << endl;
+//    newData = input();
+//    string data = "this is the first line\nsecond line\n";
+    cout << "Content of file:\n";
+    file << newData << "\n";
+    file.close();
+
+    string buf;
+    string data;
+    ifstream inFile("data.txt");
+
+    while (!inFile.eof()) {
+        getline(inFile, buf);
+        if(data != "") {
+            data +=  "\n";
+        }
+        data += buf;
+    }
+    inFile.close();
+
+    cout << data;
+
+    char *str = strdup(data.c_str());
+
+    char endOfLineDelim[] = "\n";
+    char *line = strtok(str, endOfLineDelim);
+
+    cout << "\nLargest words from each line of text:\n";
+    ofstream largestWordsFile("largestWords.txt");
+    while (line != nullptr) {
+        string words = findLargestWord(line);
+        cout << words << '\n';
+        largestWordsFile << words << "\n";
+        line = strtok(nullptr, endOfLineDelim);
+    }
+
+    str = strdup(data.c_str());
+
+    char spaceDelim[] = " \n";
+    char *word = strtok(str, spaceDelim);
+
+    int wordCnt=0;
+    while (word != nullptr) {
+        wordCnt++;
+        word = strtok(nullptr, spaceDelim);
+    }
+
+    largestWordsFile << wordCnt << "\n";
+    cout << endl;
+    cout << "Count words in the text: " << wordCnt << endl;
+    free(str);
+    largestWordsFile.close();
+
+    return 0;
+}
+
+string findLargestWord(char *line) {
+    int startIndex = 0;
+    int wordStartIndex = 0;
+    int wordLength = 0;
+    int lineLen = strlen(line);
+    for (int endIndex = 0; endIndex < lineLen; ++endIndex) {
+        if (line[endIndex] == ' ' || endIndex == lineLen - 1) {
+            if (endIndex == lineLen -1) {
+                endIndex++;
+            }
+
+            int curWordLen = endIndex - startIndex;
+            if (curWordLen > wordLength) {
+                wordLength = curWordLen;
+                wordStartIndex = startIndex;
+            }
+            startIndex = endIndex + 1;
+        }
+    }
+    string str(line);
+    return str.substr(wordStartIndex, wordLength);
+}
+
+string input() {
+    string buf;
+    getline(cin, buf,'#');
+    return buf;
+}
