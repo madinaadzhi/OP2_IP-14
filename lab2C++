@@ -1,0 +1,241 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <ctime>
+
+const char *const DELIM = " | ";
+using namespace std;
+
+struct TWorker {
+
+    string nameSurnamePatronymic;
+    string bDay;
+    string gender;
+    string post;
+};
+
+void createWorkerCatalog(string fileName);
+
+string readStringFromFile(ifstream &file);
+
+void writeStringToFile(ofstream &file, string data);
+
+void createPensFile(string basicString, string basicString1);
+
+void writeWorkerToFile(TWorker &worker, ofstream &outFile);
+
+TWorker inputWorker();
+
+TWorker readWorkerFromFile(ifstream &ifstream);
+
+int getWorkerAge(string bDay);
+
+tm convertStringToDate(const string &date);
+
+int getFullAge(tm dayOfBirthday);
+
+int getBirthYear (string date);
+
+void printWorker(TWorker worker);
+
+bool willBePensInCurrentYear(TWorker worker);
+
+void deletePensFromFile(string pensFile, string updatedPensFileName);
+
+bool isNotYetPens(string birthDay);
+
+void printWorkersFromFile(string fileName);
+
+int main() {
+
+    string workerFileName = "workers.txt";
+    string pensFileName = "pens.txt";
+    string updatedPensFileName = "updated_pens.txt";
+
+    createWorkerCatalog(workerFileName);
+    printWorkersFromFile(workerFileName);
+
+    createPensFile(workerFileName, pensFileName);
+    printWorkersFromFile(pensFileName);
+
+    deletePensFromFile(pensFileName, updatedPensFileName);
+    printWorkersFromFile(updatedPensFileName);
+
+}
+
+void printWorkersFromFile(string fileName) {
+    cout << fileName << endl;
+    ifstream pensFile(fileName, ios::binary);
+    while (true) {
+        int c = pensFile.peek();
+        if (c == EOF && pensFile.eof()) {
+            break;
+        }
+        TWorker worker = readWorkerFromFile(pensFile);
+        printWorker(worker);
+    }
+    pensFile.close();
+}
+
+void deletePensFromFile(string pensFileName, string updatedPensFileName) {
+    ifstream pensFile(pensFileName, ios::binary);
+    ofstream updatedPensFile(updatedPensFileName, ios::binary);
+
+    while (true) {
+        int c = pensFile.peek();
+        if (c == EOF && pensFile.eof()) {
+            break;
+        }
+        TWorker worker = readWorkerFromFile(pensFile);
+
+        if (isNotYetPens(worker.bDay)) {
+            writeWorkerToFile(worker, updatedPensFile);
+        }
+    }
+    pensFile.close();
+    updatedPensFile.close();
+}
+
+bool isNotYetPens(string birthDay) {
+    std::time_t t = std::time(nullptr);   // get time now
+    std::tm *now = std::localtime(&t);
+    tm bd = convertStringToDate(birthDay);
+    return now->tm_mon < bd.tm_mon ||
+             now->tm_mon == bd.tm_mon && now->tm_mday < bd.tm_mday;
+}
+
+void printWorker(TWorker worker) {
+    cout << worker.nameSurnamePatronymic << DELIM << worker.bDay << DELIM
+        << worker.gender << DELIM << worker.post << DELIM << getWorkerAge(worker.bDay) << endl;
+}
+
+int getFullAge(tm dayOfBirthday) {
+    std::time_t t = std::time(nullptr);   // get time now
+    std::tm *now = std::localtime(&t);
+    int age = now->tm_year - dayOfBirthday.tm_year;
+    if (now->tm_mon < dayOfBirthday.tm_mon ||
+        now->tm_mon == dayOfBirthday.tm_mon && now->tm_mday < dayOfBirthday.tm_mday) {
+        age--;
+    }
+    return age;
+}
+
+int getBirthYear (string date) {
+    string year = date.substr(6, 4);
+    return stoi(year);
+}
+/*
+ * @param date - date in the following format: DD.MM.YY
+ * @return
+ */
+tm convertStringToDate(const string &date) {
+
+    int year, month, day;
+    struct tm tm;
+    const char *zStart = date.c_str();
+
+    sscanf(zStart, "%d.%d.%d", &day, &month, &year);
+    tm.tm_year = year - 1900;
+    tm.tm_mon = month - 1;
+    tm.tm_mday = day;
+    tm.tm_hour = 0;
+    tm.tm_min = 0;
+    tm.tm_sec = 0;
+    tm.tm_isdst = -1;
+    return tm;
+}
+
+void createPensFile(string workerFileName, string pensFileName) {
+    ifstream workersFile(workerFileName, ios::binary);
+    ofstream pensFile(pensFileName, ios::binary);
+
+    while (true) {
+        int c = workersFile.peek();
+        if (c == EOF && workersFile.eof()) {
+            break;
+        }
+        TWorker worker = readWorkerFromFile(workersFile);
+
+        if (willBePensInCurrentYear(worker)) {
+            writeWorkerToFile(worker, pensFile);
+        }
+
+    }
+    pensFile.close();
+    workersFile.close();
+}
+
+bool willBePensInCurrentYear(TWorker worker) {
+    std::time_t t = std::time(nullptr);   // get time now
+    std::tm *now = std::localtime(&t);
+    int age = (now->tm_year + 1900) - getBirthYear(worker.bDay);
+    return (worker.gender == "FEMALE" && age == 65) || (worker.gender == "MALE" && age == 70);
+}
+
+int getWorkerAge(string bDay) {
+    const tm birthDay = convertStringToDate(bDay);
+    return getFullAge(birthDay);
+}
+
+void writeWorkerToFile(TWorker &worker, ofstream &outFile) {
+    writeStringToFile(outFile, worker.nameSurnamePatronymic);
+    writeStringToFile(outFile, worker.bDay);
+    writeStringToFile(outFile, worker.gender);
+    writeStringToFile(outFile, worker.post);
+}
+
+TWorker readWorkerFromFile(ifstream &ifstream) {
+    TWorker worker;
+    worker.nameSurnamePatronymic = readStringFromFile(ifstream);
+    worker.bDay = readStringFromFile(ifstream);
+    worker.gender = readStringFromFile(ifstream);
+    worker.post = readStringFromFile(ifstream);
+    return worker;
+}
+
+string readStringFromFile(ifstream &file) {
+    size_t lenDay;
+    file.read((char *) &lenDay, sizeof(size_t));
+    char data[lenDay];
+    file.read(data, lenDay);
+    return string(data, lenDay);
+}
+
+void writeStringToFile(ofstream &file, string data) {
+    size_t lenDay = data.length();
+    file.write((char *) &lenDay, sizeof(size_t));
+    file.write(data.c_str(), lenDay);
+}
+
+void createWorkerCatalog(string fileName) {
+    ofstream outFile(fileName, ios::binary);
+    if (!outFile) {
+        cout << "Can`t open file!" << endl;
+    }
+
+    int cntWorkers = 3;
+    cout << "Input number of workers:";
+    cin >> cntWorkers;
+    cout << endl;
+
+    for (int i = 0; i < cntWorkers; ++i) {
+        TWorker worker = inputWorker();
+        cout << endl;
+        writeWorkerToFile(worker, outFile);
+    }
+    outFile.close();
+}
+
+TWorker inputWorker() {
+    TWorker worker;
+    cin.ignore();
+    cout << "Enter surname name patronymic:";
+    getline(cin, worker.nameSurnamePatronymic);
+    cout << "Enter birthday:";
+    getline(cin, worker.bDay);
+    cout << "Enter gender:";
+    getline(cin, worker.gender);
+    cout << "Enter post:";
+    getline(cin, worker.post);
+    return worker;
+}
