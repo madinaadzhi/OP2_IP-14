@@ -5,8 +5,8 @@
 using namespace std;
 
 struct Apex {
-    double x{};
-    double y{};
+    double x;
+    double y;
 public:
     Apex();
     double getSide(Apex);
